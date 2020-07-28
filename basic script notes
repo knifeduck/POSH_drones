@@ -1,0 +1,68 @@
+###########################################################################
+# THIS SECTION INCLUDES LINKS TO SENDING/RECEIVING EMAIL USING POWERSHELL #
+###########################################################################
+
+# MOST PROMISING LEAD TO SEND EMAIL OVER SMTP
+# https://blog.mailtrap.io/powershell-send-email/
+# MOST PROMISING ALL-ENCOMPASSING EMAIL TRAFFIC SIMULATOR
+# https://github.com/cunninghamp/Start-MailGen.ps1 
+
+# MOST PROMISING LEAD FOR SMB FILE TRANSFERING 
+# https://davidstamen.com/2016/08/09/using-powershell-to-create-windows-smb-shares/
+# USEFUL FOR ENUMERATING ACTIVE SHARES ON A REMOTE MACHINE
+# https://adamtheautomator.com/powershell-file-shares/
+
+# SYNTAX FOR DNS QUERIES FROM https://adamtheautomator.com/resolve-dnsname/
+$dnsServer = @('8.8.8.8','8.8.4.4')
+Resolve-DnsName -Name <domain.to.search> -Server $dnsServer
+
+$FinalResult = @()
+foreach ($Name in $NameList) {
+    $tempObj = "" | Select-Object Name,IPAddress,Status,ErrorMessage
+    try {
+        $dnsRecord = Resolve-DnsName $Name -Server $ServerList -ErrorAction Stop | Where-Object {$_.Type -eq 'A'}
+        $tempObj.Name = $Name
+        $tempObj.IPAddress = ($dnsRecord.IPAddress -join ',')
+        $tempObj.Status = 'OK'
+        $tempObj.ErrorMessage = ''
+    }
+    catch {
+        $tempObj.Name = $Name
+        $tempObj.IPAddress = ''
+        $tempObj.Status = 'NOT_OK'
+        $tempObj.ErrorMessage = $_.Exception.Message
+    }
+
+    $FinalResult += $tempObj
+}
+return $FinalResult
+
+
+# WEB TRAFFIC SIMULATOR COURTESEY OF https://rothmanshore.com/2012/03/14/performance-generate-web-traffic-load-using-a-powershell-script/
+
+$url = "http://someserver/someapp/home.aspx"
+while ($true) {
+try {
+[net.httpWebRequest]
+$req = [net.webRequest]::create($url)
+$req.method = "GET"
+$req.ContentType = "application/x-www-form-urlencoded"
+$req.TimeOut = 60000
+
+$start = get-date
+[net.httpWebResponse] $res = $req.getResponse()
+$timetaken = ((get-date) - $start).TotalMilliseconds
+
+Write-Output $res.Content
+Write-Output ("{0} {1} {2}" -f (get-date), $res.StatusCode.value__, $timetaken)
+$req = $null
+$res.Close()
+$res = $null
+} catch [Exception] {
+Write-Output ("{0} {1}" -f (get-date), $_.ToString())
+}
+$req = $null
+
+# uncomment the line below and change the wait time to add a pause between requests
+#Start-Sleep -Seconds 1
+}
