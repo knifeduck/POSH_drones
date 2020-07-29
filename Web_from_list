@@ -1,0 +1,11 @@
+# this script will randomly choose a website under the Domain_name column in a csv and got there every 5 seconds
+
+
+$list = Import-Csv -Path .\Documents\scripts\list.csv -Delimiter ","| select -ExpandProperty "Domain_name"
+
+while ($true){
+    $domselect = Get-Random $list -Count 1
+    #Write-Host "$domselect"
+    [System.Diagnostics.Process]::Start($domselect)
+    start-sleep -seconds 5
+}
